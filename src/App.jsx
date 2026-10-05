@@ -1,52 +1,264 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowUpRight, ChevronDown, ChevronRight, Globe2, Mail, MapPin, Menu, Phone, ShieldCheck, Truck, Users, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CFG, IMG, LOGO, SLIDES, SERV, CUIS, HALAL, WHY, STEPS, QUAL, PROJ, PF, MENU, MT, FAQ, NAV, FIELDS, S } from './data'
 
-const services = [
-  ['01', 'Industrial catering', '28,000+ meals daily, HACCP-certified kitchens, Smart Tray Technology, CCTV kitchen monitoring, and client-specific menus.', 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=900&q=85'],
-  ['02', 'Housing solutions', '8,000+ residents housed daily in Aramco-approved camps with clinics, gyms, mini-markets, security, and desalination systems.', 'https://images.unsplash.com/photo-1560185008-b033106af5c3?auto=format&fit=crop&w=900&q=85'],
-  ['03', 'Facilities management', 'Plumbing, electrical, carpentry, janitorial, security, waste, utilities, pest control, and room attendance.', 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=85'],
-  ['04', 'Mobile kitchens', 'Certified mobile kitchens for remote and offshore operations, with setup, support, removal, and rental options.', 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=900&q=85'],
-  ['05', 'Banqueting & events', 'Custom menus, elegant table setups, live cooking, VIP service crews, and full QHSE compliance.', 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=900&q=85'],
-]
+const Plate = ({ h }) => (
+  <svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true">
+    <circle cx="27" cy="30" r="14" fill="none" stroke={`hsl(${h} 45% 35%)`} strokeWidth="3" />
+    <path d="M12 20a18 18 0 0 1 30 0" fill="none" stroke={`hsl(${h} 55% 45%)`} strokeWidth="3" strokeLinecap="round" />
+    <path d="M27 18c4-6 9-6 10-4-1 4-6 5-10 4z" fill="#3f6b4a" />
+  </svg>
+)
 
-const projects = ['URMPP Program - Jafurah & South Ghawar (2022 - Ongoing)', 'Qiddiya Infrastructure Program (2022 - Ongoing)', 'Master Gas Phase II - Aramco (2019-2022)', 'EO/PO Pipelines - Sadara (2019-2022)', 'SABIC - General Construction Projects (2014-2023)']
-const locations = ['Jubail', 'Khobar / Dammam', 'Ras Tanoura', 'Turaif', 'Haradth', 'North Jafurah', 'South Jafurah', 'Riyadh', 'Jizan', 'Neom']
-const capabilities = ['Engineering & Construction (EPC)', 'Global Supply Chain Management', 'Specialized Cathodic Protection Services', 'Telecom & ICT Infrastructure', 'Asset & Field Solutions', 'Commissioning', 'Project Management', 'Catering & Camp Services']
-const clients = ['Saudi Aramco', 'SABIC', 'Maaden', 'Qiddiya', 'NEOM', 'Leading EPC contractors', 'Saudi Fal', 'Halliburton', 'Al Muhaidib Contracting', 'CAT Group', 'Larsen & Toubro', 'Bilfal Heavy Industries']
+/* FINAL LOGO: replace public/images/logo.png (or swap this <img> for an inline SVG) with the approved logo. */
+const Logo = () => (
+  <img src={LOGO} alt="SISCO Catering سيسكو للتموين" width="110" height="48"
+    style={{ background: '#fff', borderRadius: 10, padding: '4px 8px', height: 48, width: 'auto' }} />
+)
 
-function App() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); setMenuOpen(false) }
-  return <main><style>{`.sisco-logo{display:inline-flex;flex-direction:column;line-height:.8;color:currentColor;min-width:48px}.sisco-logo i{font-size:11px;font-style:normal;font-weight:700}.sisco-logo b{font-size:15px;letter-spacing:-.08em}.client-logo-grid{margin-top:10px}.client-logo{min-height:105px;display:flex;flex-direction:column;justify-content:center;gap:8px}.client-logo span{color:var(--orange);font:10px 'DM Mono',monospace}.client-logo h3{font-size:16px;margin:0}.client-logo small{color:var(--muted);font:8px 'DM Mono',monospace;letter-spacing:.12em}`}</style>
-    <nav className="nav-shell" aria-label="Main navigation"><button className="brand" onClick={() => scrollTo('top')} aria-label="SISCO Catering home"><span className="sisco-logo"><i>سيسكو</i><b>SISCO</b></span><span><strong>SISCO</strong><small>CATERING & FM</small></span></button><div className={`nav-links ${menuOpen ? 'is-open' : ''}`}><button onClick={() => scrollTo('about')}>About</button><button onClick={() => scrollTo('services')}>Services</button><button onClick={() => scrollTo('projects')}>Projects</button><button onClick={() => scrollTo('standards')}>QHSE</button><button onClick={() => scrollTo('contact')}>Contact</button></div><button className="nav-cta" onClick={() => scrollTo('contact')}>Talk to our team <ArrowUpRight size={16} /></button><button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">{menuOpen ? <X /> : <Menu />}</button></nav>
+export default function App() {
+  const [lang, setLang] = useState(() => { try { return localStorage.getItem('l') || 'en' } catch { return 'en' } })
+  const [si, setSi] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const [pf, setPf] = useState('*')
+  const [mt, setMt] = useState('Breakfast')
+  const [scrolled, setScrolled] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const [errs, setErrs] = useState({})
+  const [status, setStatus] = useState({ type: '', text: '' })
+  const [sending, setSending] = useState(false)
+  const [x0, setX0] = useState(0)
 
-    <section className="hero" id="top"><div className="hero-image" /><div className="hero-overlay" /><div className="hero-content page-pad"><motion.p className="eyebrow light" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>Specialized Industrial Services Co. Ltd</motion.p><motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>Integrated services<br /><em>for the Kingdom's</em><br />critical operations.</motion.h1><div className="hero-bottom"><p>Engineering, procurement, construction, catering, accommodation, supply chain, and operational support across Saudi Arabia.</p><button className="circle-button" onClick={() => scrollTo('about')} aria-label="Explore SISCO"><ChevronDown size={20} /></button></div></div><div className="hero-meta"><span>EST. 1990</span><span className="hero-line" /><span>100% SAUDI-OWNED</span></div></section>
+  const ar = lang === 'ar'
+  const L = (a) => a[ar ? 1 : 0]
+  const T = (k) => S[lang][k]
+  const wa = `https://wa.me/${CFG.wa}`
+  const go = (n) => setSi((p) => (p + n + SLIDES.length) % SLIDES.length)
 
-    <section className="intro section-pad" id="about"><div className="intro-stamp"><ShieldCheck size={18} /><span>Safety first<br />always</span></div><div className="intro-copy"><p className="eyebrow">About SISCO</p><h2>Trusted partner for<br /><em>Vision 2030 transformation.</em></h2><p className="lead">SISCO delivers engineering, procurement, construction, commissioning, global supply chain solutions, and asset and field solutions to key growth sectors in the Kingdom of Saudi Arabia.</p><p className="body-copy">We serve oil & gas, buildings & infrastructure, petrochemical, mining, and metals sectors with comprehensive EPC, maintenance, industrial, and operational support services.</p></div><div className="intro-stats"><div><strong>1990</strong><span>year<br />established</span></div><div><strong>5,500<span>+</span></strong><span>employees<br />across KSA</span></div><div><strong>107m<span>+</span></strong><span>safe<br />manhours</span></div><div><strong>2b<span>+</span></strong><span>SAR annual<br />procurement</span></div></div></section>
+  useEffect(() => {
+    document.documentElement.lang = lang
+    document.documentElement.dir = ar ? 'rtl' : 'ltr'
+    document.title = ar ? 'سيسكو للتموين | خدمات التموين والضيافة في السعودية' : 'SISCO Catering | Catering and Hospitality Services in Saudi Arabia'
+    try { localStorage.setItem('l', lang) } catch { /* storage unavailable */ }
+  }, [lang, ar])
 
-    <section className="statement section-pad"><div className="statement-image" /><div className="statement-content"><p className="eyebrow light">Who we are</p><h2>Operational excellence<br /><em>with a Saudi heart.</em></h2><p>Privately owned and 100% Saudi, SISCO has served the Kingdom for more than 35 years. Our teams mobilize people, resources, equipment, and governance wherever clients need dependable execution.</p><div className="signature">People. Safety. Performance.</div></div></section>
+  useEffect(() => {
+    const f = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', f, { passive: true })
+    return () => window.removeEventListener('scroll', f)
+  }, [])
 
-    <section className="services section-pad" id="services"><div className="section-heading"><div><p className="eyebrow">Our capabilities</p><h2>From site to<br /><em>service.</em></h2></div><p className="heading-note">One operating partner for<br />complex industrial environments.</p></div><div className="service-grid">{services.map(([number, title, copy, image], index) => <motion.article className="service-card" key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * .06 }}><div className="service-image"><img src={image} alt="" /><span>{number}</span></div><div className="service-info"><h3>{title}</h3><p>{copy}</p></div></motion.article>)}</div></section>
+  useEffect(() => {
+    if (paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t = setInterval(() => go(1), 6000)
+    return () => clearInterval(t)
+  }, [paused])
 
-    <section className="standards section-pad" id="standards"><div className="section-heading"><div><p className="eyebrow">QHSE & differentiation</p><h2>Built for precision.<br /><em>Powered by safety.</em></h2></div></div><div className="standards-grid"><div><ShieldCheck size={25} /><h3>Safety culture</h3><p>Executive HSE leadership, training centers, safety-first culture, proactive risk management, and continuous improvement.</p></div><div><Truck size={25} /><h3>Fast mobilization</h3><p>Proven execution excellence, flexible LSTK and reimbursable commercial models, and robust project management systems.</p></div><div><Users size={25} /><h3>Certified training</h3><p>First Aid, H2S Awareness, Fire Safety, HACCP, Highfield preparation, and continuing employee HSE training.</p></div><div><Globe2 size={25} /><h3>Certified systems</h3><p>ISO 9001 Quality, ISO 22000 Food Safety, ISO 14001 Environmental, ISO 45001 Health and Safety, and HACCP compliance.</p></div></div></section>
+  const onKey = (e) => {
+    if (e.key === 'ArrowRight') go(ar ? -1 : 1)
+    if (e.key === 'ArrowLeft') go(ar ? 1 : -1)
+  }
+  const onTouchEnd = (e) => {
+    setPaused(false)
+    const dx = e.changedTouches[0].clientX - x0
+    if (Math.abs(dx) > 40) go((dx < 0 ? 1 : -1) * (ar ? -1 : 1))
+  }
 
-    <section className="section-pad" id="catering-detail"><div className="section-heading"><div><p className="eyebrow">Integrated industrial catering solutions</p><h2>Quality you can<br /><em>trace.</em></h2></div><p className="heading-note">Built for precision.<br />Powered by safety.</p></div><div className="why-grid"><div><strong>01</strong><h3>Culinary excellence</h3><p>High-quality, culturally inclusive meals prepared by experienced international chefs.</p></div><div><strong>02</strong><h3>Food safety & compliance</h3><p>HACCP-certified operations aligned with Aramco standards for hygiene and regulatory adherence.</p></div><div><strong>03</strong><h3>Advanced packaging</h3><p>Contaminant-free packaging with thermal control, X-ray scanning, and real-time verification.</p></div><div><strong>04</strong><h3>Kitchen technology</h3><p>Digitized kitchen systems for efficient production, quality control, and consistent output.</p></div><div><strong>05</strong><h3>Traceability</h3><p>Full tracking of food production and delivery from source to service, with sample retention protocols.</p></div><div><strong>06</strong><h3>Temperature-controlled logistics</h3><p>GPS-monitored fleet with insulated compartments for safe, timely delivery of hot and cold meals.</p></div><div><strong>07</strong><h3>Client customization</h3><p>Flexible menus and dietary plans tailored from large-scale industrial to VIP catering.</p></div></div></section>
+  const submit = async (e) => {
+    e.preventDefault()
+    const f = e.currentTarget
+    const next = {}
+    FIELDS.forEach(([id, , , type, req]) => {
+      const v = f.elements[id].value.trim()
+      if (req && !v) next[id] = T('req')
+      else if (v && type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) next[id] = T('inv')
+      else if (v && type === 'tel' && !/^\+?[\d\s\-()]{7,16}$/.test(v)) next[id] = T('inv')
+    })
+    if (!f.elements.consent.checked) next.consent = T('req')
+    setErrs(next)
+    if (Object.keys(next).length) { setStatus({ type: 'bad', text: T('bad') }); return }
+    setSending(true)
+    try {
+      /* TODO: connect to your backend, e.g.
+         await fetch('/api/proposal', { method: 'POST', body: new FormData(f) }) */
+      await new Promise((r) => setTimeout(r, 900))
+      setStatus({ type: 'ok', text: T('ok') })
+      f.reset()
+    } catch {
+      setStatus({ type: 'bad', text: T('bad') })
+    }
+    setSending(false)
+  }
 
-    <section className="network section-pad" id="network"><div className="network-copy"><p className="eyebrow">Our strategic project network</p><h2>Ready wherever<br /><em>the work is.</em></h2><p>Nationwide project execution centers mobilize teams and resources across the Kingdom.</p><div className="location-list">{locations.map((location, index) => <div key={location}><span>0{index + 1}</span>{location}<ChevronRight size={15} /></div>)}</div></div><div className="network-map"><div className="standards-grid"><div><strong>24/7</strong><h3>Operational support</h3><p>Continuous catering, housing, facilities, and logistics coverage.</p></div><div><strong>17+</strong><h3>Supply countries</h3><p>Digital procurement and a robust international supplier network.</p></div><div><strong>3,500</strong><h3>Residents supported</h3><p>Scalable South Jafurah life-support capacity.</p></div><div><strong>100%</strong><h3>Kingdom focus</h3><p>Regional teams ready for onshore, offshore, and remote projects.</p></div></div><p>Our operational network spans Jubail, Khobar / Dammam, Ras Tanoura, Turaif, Haradth, North & South Jafurah, Riyadh, Jizan, and Neom.</p></div></section>
+  const projects = PROJ.filter((p) => pf === '*' || p[2] === pf)
+  const bare = { display: 'inline', marginInlineEnd: 14 }
 
-    <section className="section-pad" id="projects"><div className="section-heading"><div><p className="eyebrow">Key projects</p><h2>Delivery at<br /><em>Kingdom scale.</em></h2></div></div><div className="news-grid">{projects.map(project => <article key={project}><div className="news-date">PROJECT<span>REFERENCE</span></div><h3>{project}</h3><ArrowUpRight size={18} /></article>)}</div></section>
+  return (
+    <>
+      <a className="skip" href="#main">{T('skip')}</a>
 
-    <section className="why section-pad" id="roadmap"><div><p className="eyebrow">Vision 2030 roadmap</p><h2>Growth.<br /><em>Innovation.</em><br />Sustainability.</h2></div><div className="why-grid"><div><strong>EXPANSION</strong><h3>Scale housing capacity</h3><p>Increase resident capacity by 2026.</p></div><div><strong>INNOVATION</strong><h3>Boost meal production</h3><p>Increase daily production to 40,000+ meals by 2030 with AI-driven kitchens.</p></div><div><strong>SUSTAINABILITY</strong><h3>Net-zero emission</h3><p>Transition all camps to solar / hybrid energy by 2030.</p></div><div><strong>TECHNOLOGY</strong><h3>AI integration</h3><p>Reduce food waste by 20% via predictive analytics between 2026 and 2028.</p></div><div><strong>WASTE TO RESOURCE</strong><h3>Composting growth</h3><p>Expand composting from 5 to 15 tons per month by 2027 for urban farming partnerships.</p></div><div><strong>SMART HOUSING</strong><h3>Resident app</h3><p>Launch an IoT-enabled resident app in 2027 for utilities and community engagement.</p></div></div></section>
+      <div className="ann"><div className="w">
+        <span>{T('ann')}</span>
+        <span className="l">
+          <a href={`tel:${CFG.phone.replace(/[^+\d]/g, '').slice(0, 13)}`}><bdi>{CFG.phone}</bdi></a>
+          <a href={wa} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <a href={`mailto:${CFG.email}`}><bdi>{CFG.email}</bdi></a>
+          <a href="#proposal">{T('prop')}</a>
+          <button className="lang" onClick={() => setLang(ar ? 'en' : 'ar')}>{T('lang')}</button>
+        </span>
+      </div></div>
 
-    <section className="section-pad" id="csr"><div className="section-heading"><div><p className="eyebrow">Corporate social responsibility</p><h2>Impact beyond<br /><em>operations.</em></h2></div></div><div className="standards-grid"><div><Users size={25} /><h3>Community engagement</h3><p>Sponsorship of local sports events, charity organizations, and public health initiatives.</p></div><div><MapPin size={25} /><h3>Local hiring</h3><p>Supporting local workforce and economic growth across the regions where we operate.</p></div><div><Globe2 size={25} /><h3>Social initiatives</h3><p>Partnering with municipalities for waste sorting and environmental awareness programs.</p></div><div><ShieldCheck size={25} /><h3>Safety & environment</h3><p>Public food safety awareness, in-house fresh produce, zero food waste policy, and community clean-up initiatives.</p></div></div></section>
+      <header className={scrolled ? 's' : ''}><div className="w hb">
+        <a className="logo" href="#top"><Logo /></a>
+        <button className="burger" aria-expanded={navOpen} aria-controls="nv" aria-label="Menu" onClick={() => setNavOpen(!navOpen)}>☰</button>
+        <nav id="nv" className={navOpen ? 'o' : ''} aria-label="Main">
+          <ul>
+            {NAV.map((n) => <li key={n[2]}><a href={`#${n[2]}`} onClick={() => setNavOpen(false)}>{L(n)}</a></li>)}
+            <li><a className="btn" href="#proposal" style={{ color: '#123a5c' }}>{T('prop')}</a></li>
+          </ul>
+        </nav>
+      </div></header>
 
-    <section className="section-pad" id="clients"><div className="section-heading"><div><p className="eyebrow">Our clients & partners</p><h2>Trusted by<br /><em>industry leaders.</em></h2></div></div><div className="standards-grid client-logo-grid">{clients.map((client, index) => <div className="client-logo" key={client}><span>0{index + 1}</span><h3>{client}</h3><small>CLIENT & PARTNER</small></div>)}</div></section>
+      <main id="main">
+        <section className="hero" id="top"><div className="w in">
+          {/* TODO: for a real hero photo, set background in .hero (index.css) to url(/images/catering-hero.webp) */}
+          <p className="tag">{T('tr')}</p>
+          <h1>{T('h1')}</h1>
+          <p>{T('hp')}</p>
+          <p><a className="btn" href="#proposal">{T('b1')}</a> <a className="btn o" href="#services">{T('b2')}</a></p>
+          <div className="fl">{T('fc').map((x) => <span key={x}>✓ {x}</span>)}</div>
+        </div></section>
 
-    <section className="contact" id="contact"><div className="contact-inner"><p className="eyebrow light">Contact SISCO</p><h2>Let’s support<br /><em>your operation.</em></h2><p>SISCO Head Office, 9665 King Faisal Ibn Abdulaziz, Al Bahar, Al Khobar 34218, Saudi Arabia.</p><div className="contact-details"><a href="tel:+966138297800"><Phone size={17} />+966 (13) 829 7800 - Ext. 7971</a><a href="mailto:Info.catering@siscosaudi.com"><Mail size={17} />Info.catering@siscosaudi.com</a><a href="mailto:info@siscosaudi.com"><Mail size={17} />info@siscosaudi.com</a><span><MapPin size={17} />Khobar, Saudi Arabia</span></div></div><div className="contact-side">EPC <span>•</span> Supply Chain <span>•</span> Catering <span>•</span> FM</div></section>
+        <div className="sl" role="region" aria-roledescription="carousel" aria-label={T('sv')} tabIndex={0}
+          onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)} onBlur={() => setPaused(false)} onKeyDown={onKey}
+          onTouchStart={(e) => { setPaused(true); setX0(e.touches[0].clientX) }} onTouchEnd={onTouchEnd}>
+          {SLIDES.map((s, k) => (
+            <div key={k} className={'sd' + (k === si ? ' a' : '')} role="group" aria-roledescription="slide"
+              aria-label={L(s)} aria-hidden={k !== si}
+              style={{ background: `url(${IMG[s[4]]}) ${s[5]}/cover no-repeat` }}>
+              <div className="c"><h3>{L(s)}</h3><p>{ar ? s[3] : s[2]}</p></div>
+            </div>
+          ))}
+          <button className="ar p" aria-label="Previous" onClick={() => go(-1)}>❮</button>
+          <button className="ar n" aria-label="Next" onClick={() => go(1)}>❯</button>
+          <div className="dots">
+            {SLIDES.map((_, k) => <button key={k} className={k === si ? 'a' : ''} aria-label={`${k + 1}`} onClick={() => setSi(k)} />)}
+          </div>
+        </div>
 
-    <footer><div className="footer-brand"><span className="sisco-logo"><i>سيسكو</i><b>SISCO</b></span><span><strong>SISCO</strong><small>CATERING & FM</small></span></div><p>Engineering, industrial, catering,<br />and operational support services.</p><div className="footer-links"><button onClick={() => scrollTo('services')}>Services</button><button onClick={() => scrollTo('projects')}>Projects</button><button onClick={() => scrollTo('clients')}>Partners</button><a href="https://siscosaudi.com/" target="_blank" rel="noreferrer" aria-label="SISCO website"><ArrowUpRight size={17} /></a></div><small className="copyright">© 2026 Specialized Industrial Services Co. Ltd.</small></footer>
-  </main>
+        <div className="w">
+          <div className="facts">
+            <div><b>28,000+</b><span>{ar ? 'وجبة يومياً*' : 'meals daily*'}</span></div>
+            <div><b>HACCP</b><span>*</span></div>
+            <div><b>ISO</b><span>9001 · 22000 · 14001 · 45001*</span></div>
+            <div><b>8,000+</b><span>{ar ? 'مقيم في مواقع متعددة*' : 'residents housed*'}</span></div>
+          </div>
+          <p className="note">{T('fn')} {T('cf')}</p>
+        </div>
+
+        <section id="about"><div className="w"><h2>{T('ab')}</h2><p className="lead">{T('abp')}</p></div></section>
+
+        <section className="alt" id="services"><div className="w"><h2>{T('sv')}</h2>
+          <div className="g">{SERV.map((s, k) => (
+            <article className="cd" key={k}>
+              <div className="im" style={{ background: `hsl(${30 + k * 38} 40% 88%)` }}><Plate h={30 + k * 38} /></div>
+              <div className="bd"><h3>{L(s)}</h3><p>{ar ? s[3] : s[2]}</p><a className="m" href="#proposal">{T('lm')}</a></div>
+            </article>))}
+          </div>
+        </div></section>
+
+        <section id="menus"><div className="w"><h2>{T('cu')}</h2><p className="lead">{T('cp')}</p>
+          <div className="g">{CUIS.map((c, k) => (
+            <article className="cd" key={k}>
+              <div className="im" style={{ background: `hsl(${100 + k * 45} 30% 85%)` }}><Plate h={100 + k * 45} /></div>
+              <div className="bd"><h3>{L(c)}</h3><p>{ar ? c[3] : c[2]}</p></div>
+            </article>))}
+          </div>
+        </div></section>
+
+        <section className="dk" id="halal"><div className="w"><h2>{T('hl')}</h2><p className="lead">{T('hp2')}</p>
+          <ul className="ck">{HALAL.map((h, k) => <li key={k}>{L(h)}</li>)}</ul>
+          <p className="note">{ar ? 'لا نذكر شهادة حلال ما لم تُقدَّم وثائق رسمية.' : 'Halal certification is only stated when official documentation is supplied.'}</p>
+        </div></section>
+
+        <section id="sectors"><div className="w"><h2>{T('sec')}</h2><p className="lead">{T('secp')}</p>
+          <h2 style={{ marginTop: 50 }}>{T('wy')}</h2>
+          <div className="g">{WHY.map((s, k) => <article className="cd pl" key={k}><h3>{L(s)}</h3><p>{ar ? s[3] : s[2]}</p></article>)}</div>
+        </div></section>
+
+        <section className="alt"><div className="w"><h2>{T('pc')}</h2>
+          <div className="pr">{STEPS.map((s, k) => <div key={k}>{L(s)}</div>)}</div>
+          <p className="note">{T('pcs')}</p>
+        </div></section>
+
+        <section className="dk"><div className="w"><h2>{T('ql')}</h2>
+          <ul className="ck">{QUAL.map((h, k) => <li key={k}>{L(h)}</li>)}</ul>
+          <p className="note">{T('qn')}</p>
+        </div></section>
+
+        <section id="projects"><div className="w"><h2>{T('pj')}</h2><p className="lead">{T('pn')}</p>
+          <div className="tabs" role="group">{PF.map((f) => <button key={f[2]} aria-pressed={pf === f[2]} onClick={() => setPf(f[2])}>{L(f)}</button>)}</div>
+          <div className="g">{projects.map((p, k) => <article className="cd pl" key={k}><h3>{L(p)}</h3></article>)}</div>
+        </div></section>
+
+        <section className="alt"><div className="w"><h2>{T('mn')}</h2><p className="lead">{T('mnn')}</p>
+          <div className="tabs" role="tablist">{Object.keys(MENU).map((k) => <button key={k} role="tab" aria-selected={mt === k} onClick={() => setMt(k)}>{ar ? MT[k] : k}</button>)}</div>
+          <div className="g">{MENU[mt].map((x, k) => <article className="cd pl" key={k}><h3>{x.split('|')[ar ? 1 : 0]}</h3></article>)}</div>
+          <p><a className="btn n" href="#proposal">{T('md')}</a></p>
+        </div></section>
+
+        <section id="media"><div className="w"><h2>{T('tt')}</h2>
+          {/* TODO: replace this sample testimonial with an approved real testimonial */}
+          <blockquote className="cd pl" style={{ margin: '20px 0' }}><p>{T('tq')}</p><small>{T('ts')}</small></blockquote>
+          <h2>{T('md2')}</h2><p className="lead">{T('mdp')}</p>
+        </div></section>
+
+        <section className="dk" id="proposal"><div className="w"><h2>{T('fm')}</h2>
+          <form onSubmit={submit} noValidate>
+            {FIELDS.map(([id, en, arb, type, req]) => (
+              <div key={id}>
+                <label htmlFor={id}>{ar ? arb : en}{req ? ' *' : ''}</label>
+                {type === 'select'
+                  ? <select id={id} required={!!req} aria-invalid={!!errs[id]}><option value="">{T('fs')}</option>{T('fo').map((o) => <option key={o}>{o}</option>)}</select>
+                  : <input id={id} type={type} required={!!req} aria-invalid={!!errs[id]} dir={type === 'tel' || type === 'email' ? 'ltr' : undefined} inputMode={type === 'tel' ? 'tel' : undefined} />}
+                <span className="er">{errs[id]}</span>
+              </div>
+            ))}
+            <div className="f"><label htmlFor="message">{T('msg')}</label><textarea id="message" rows="4" /></div>
+            <div className="f"><label htmlFor="file">{T('up')}</label><input id="file" type="file" style={{ background: 'none', color: '#fff', border: 0, padding: 0 }} /></div>
+            <div className="f"><label style={{ fontWeight: 400 }}><input type="checkbox" id="consent" /> {T('cs')} *</label><span className="er">{errs.consent}</span></div>
+            <div className="f">
+              <button className="btn" type="submit" disabled={sending}>{sending ? T('sending') : T('sb')}</button>{' '}
+              <a className="btn o" href={wa} target="_blank" rel="noopener noreferrer">{T('wb')}</a>
+              <div id="msg" className={status.type} role="status" aria-live="polite">{status.text}</div>
+            </div>
+          </form>
+        </div></section>
+
+        <section id="contact"><div className="w"><h2>{T('ct')}</h2>
+          <p><bdi>{CFG.phone}</bdi><br /><bdi>{CFG.email}</bdi><br />{L(CFG.city)}<br />{T('wh')}: {L(CFG.hours)}<br />{T('ar')}</p>
+          {/* TODO: embed Google Map once the office address is confirmed */}
+        </div></section>
+
+        <section className="alt"><div className="w"><h2>{T('fq')}</h2>
+          {FAQ.map((q, k) => <details key={k}><summary>{L(q)}</summary><p>{ar ? q[3] : q[2]}</p></details>)}
+        </div></section>
+      </main>
+
+      <footer><div className="w">
+        <div className="g">
+          <div><a className="logo" href="#top"><Logo /></a><p>{ar ? 'سيسكو للتموين، الخبر، المملكة العربية السعودية.' : 'SISCO Catering, Khobar, Saudi Arabia.'}</p></div>
+          <div><h3>{T('sv')}</h3>{SERV.slice(0, 4).map((s, k) => <a key={k} href="#services">{L(s)}</a>)}</div>
+          <div><h3>{T('ab')}</h3><a href="#about">{T('ab')}</a><a href="#projects">{L(NAV[5])}</a><a href="#contact">{L(NAV[7])}</a></div>
+          <div><h3>{T('ct')}</h3><a href={wa}><bdi>{CFG.phone}</bdi></a><a href={`mailto:${CFG.email}`}><bdi>{CFG.email}</bdi></a>{/* TODO: social links */}</div>
+        </div>
+        <p style={{ marginTop: 30 }}><a style={bare} href="#">{T('ft')}</a><a style={bare} href="#">{T('ft2')}</a><a style={{ display: 'inline' }} href="#">{T('ft3')}</a></p>
+        <p>{T('cr')}</p>
+      </div></footer>
+
+      <a className="wa" href={wa} target="_blank" rel="noopener noreferrer" aria-label={T('wb')}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm5.2 14c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.3c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z" /></svg>
+      </a>
+    </>
+  )
 }
-
-export default App
