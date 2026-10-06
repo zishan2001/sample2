@@ -1,264 +1,599 @@
-import { useState, useEffect } from 'react'
-import { CFG, IMG, LOGO, SLIDES, SERV, CUIS, HALAL, WHY, STEPS, QUAL, PROJ, PF, MENU, MT, FAQ, NAV, FIELDS, S } from './data'
+import { useEffect, useMemo, useState } from "react";
+import { CFG, IMG, LOGO, CUIS, FIELDS, S } from "./data";
+import "./index.css";
 
-const Plate = ({ h }) => (
-  <svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true">
-    <circle cx="27" cy="30" r="14" fill="none" stroke={`hsl(${h} 45% 35%)`} strokeWidth="3" />
-    <path d="M12 20a18 18 0 0 1 30 0" fill="none" stroke={`hsl(${h} 55% 45%)`} strokeWidth="3" strokeLinecap="round" />
-    <path d="M27 18c4-6 9-6 10-4-1 4-6 5-10 4z" fill="#3f6b4a" />
-  </svg>
-)
-
-/* FINAL LOGO: replace public/images/logo.png (or swap this <img> for an inline SVG) with the approved logo. */
 const Logo = () => (
-  <img src={LOGO} alt="SISCO Catering سيسكو للتموين" width="110" height="48"
-    style={{ background: '#fff', borderRadius: 10, padding: '4px 8px', height: 48, width: 'auto' }} />
-)
+  <img src={LOGO} alt="SISCO Catering" width="122" height="54" />
+);
+
+const unique = (items) => [...new Set((items || []).filter(Boolean))];
 
 export default function App() {
-  const [lang, setLang] = useState(() => { try { return localStorage.getItem('l') || 'en' } catch { return 'en' } })
-  const [si, setSi] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const [pf, setPf] = useState('*')
-  const [mt, setMt] = useState('Breakfast')
-  const [scrolled, setScrolled] = useState(false)
-  const [navOpen, setNavOpen] = useState(false)
-  const [errs, setErrs] = useState({})
-  const [status, setStatus] = useState({ type: '', text: '' })
-  const [sending, setSending] = useState(false)
-  const [x0, setX0] = useState(0)
-
-  const ar = lang === 'ar'
-  const L = (a) => a[ar ? 1 : 0]
-  const T = (k) => S[lang][k]
-  const wa = `https://wa.me/${CFG.wa}`
-  const go = (n) => setSi((p) => (p + n + SLIDES.length) % SLIDES.length)
-
-  useEffect(() => {
-    document.documentElement.lang = lang
-    document.documentElement.dir = ar ? 'rtl' : 'ltr'
-    document.title = ar ? 'سيسكو للتموين | خدمات التموين والضيافة في السعودية' : 'SISCO Catering | Catering and Hospitality Services in Saudi Arabia'
-    try { localStorage.setItem('l', lang) } catch { /* storage unavailable */ }
-  }, [lang, ar])
-
-  useEffect(() => {
-    const f = () => setScrolled(window.scrollY > 40)
-    window.addEventListener('scroll', f, { passive: true })
-    return () => window.removeEventListener('scroll', f)
-  }, [])
-
-  useEffect(() => {
-    if (paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const t = setInterval(() => go(1), 6000)
-    return () => clearInterval(t)
-  }, [paused])
-
-  const onKey = (e) => {
-    if (e.key === 'ArrowRight') go(ar ? -1 : 1)
-    if (e.key === 'ArrowLeft') go(ar ? 1 : -1)
-  }
-  const onTouchEnd = (e) => {
-    setPaused(false)
-    const dx = e.changedTouches[0].clientX - x0
-    if (Math.abs(dx) > 40) go((dx < 0 ? 1 : -1) * (ar ? -1 : 1))
-  }
-
-  const submit = async (e) => {
-    e.preventDefault()
-    const f = e.currentTarget
-    const next = {}
-    FIELDS.forEach(([id, , , type, req]) => {
-      const v = f.elements[id].value.trim()
-      if (req && !v) next[id] = T('req')
-      else if (v && type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) next[id] = T('inv')
-      else if (v && type === 'tel' && !/^\+?[\d\s\-()]{7,16}$/.test(v)) next[id] = T('inv')
-    })
-    if (!f.elements.consent.checked) next.consent = T('req')
-    setErrs(next)
-    if (Object.keys(next).length) { setStatus({ type: 'bad', text: T('bad') }); return }
-    setSending(true)
+  const [lang, setLang] = useState(() => {
     try {
-      /* TODO: connect to your backend, e.g.
-         await fetch('/api/proposal', { method: 'POST', body: new FormData(f) }) */
-      await new Promise((r) => setTimeout(r, 900))
-      setStatus({ type: 'ok', text: T('ok') })
-      f.reset()
+      return localStorage.getItem("l") || "en";
     } catch {
-      setStatus({ type: 'bad', text: T('bad') })
+      return "en";
     }
-    setSending(false)
-  }
+  });
+  const [open, setOpen] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const [errors, setErrors] = useState({});
+  const [status, setStatus] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const projects = PROJ.filter((p) => pf === '*' || p[2] === pf)
-  const bare = { display: 'inline', marginInlineEnd: 14 }
+  const ar = lang === "ar";
+  const T = (key) => S?.[lang]?.[key] ?? "";
+  const L = (value) => value?.[ar ? 1 : 0] || "";
+  const wa = `https://wa.me/${CFG.wa}`;
+  const profileAsset = (name) => `${import.meta.env.BASE_URL}public/profile/${name}`;
+
+  const imagePool = useMemo(
+    () => unique(Object.values(IMG || {}).filter((value) => typeof value === "string")),
+    []
+  );
+
+  const pickImage = (...keys) => {
+    for (const key of keys) {
+      if (key && IMG?.[key]) return IMG[key];
+    }
+    return null;
+  };
+
+  const serviceCards = useMemo(() => {
+    const fallback = imagePool;
+    return [
+      {
+        number: "01",
+        title: ["Project Catering", "تموين المشاريع"],
+        text: [
+          "Meal programs scaled to your project and schedule.",
+          "برامج وجبات مصممة لتناسب حجم مشروعك وجدوله التشغيلي.",
+        ],
+        image:
+          pickImage("project", "catering", "industrial", "food") ||
+          fallback[0] ||
+          "",
+      },
+      {
+        number: "02",
+        title: ["Workforce Dining", "إعاشة القوى العاملة"],
+        text: [
+          "Balanced daily menus for large workforce communities.",
+          "قوائم يومية متوازنة لمجتمعات القوى العاملة الكبيرة.",
+        ],
+        image:
+          pickImage("workforce", "dining", "camp", "meal") ||
+          fallback[1] ||
+          fallback[0] ||
+          "",
+      },
+      {
+        number: "03",
+        title: ["Remote-Site Catering", "تموين المواقع النائية"],
+        text: [
+          "Mobile kitchens and organized delivery logistics.",
+          "مطابخ متنقلة وخدمات توصيل ولوجستيات منظمة للمواقع النائية.",
+        ],
+        image:
+          pickImage("remote", "logistics", "kitchen", "site") ||
+          fallback[2] ||
+          fallback[0] ||
+          "",
+      },
+    ];
+  }, [imagePool]);
+
+  const heroSlides = useMemo(() => {
+    const slideImages = unique([
+      pickImage("hero", "catering", "food"),
+      serviceCards[0]?.image,
+      serviceCards[1]?.image,
+      serviceCards[2]?.image,
+      ...imagePool,
+    ]).slice(0, 4);
+
+    const copy = [
+      {
+        eyebrow: ["SISCO CATERING", "سيسكو للتموين"],
+        title: [
+          "Catering that keeps complex operations moving.",
+          "تموين يحافظ على سير العمليات المعقدة بكفاءة.",
+        ],
+        text: [
+          "Reliable food service for projects, workforce communities and remote sites across Saudi Arabia.",
+          "خدمات تموين موثوقة للمشاريع ومجتمعات القوى العاملة والمواقع النائية في المملكة العربية السعودية.",
+        ],
+      },
+      {
+        eyebrow: ["PROJECT CATERING", "تموين المشاريع"],
+        title: [
+          "Built around your project, schedule and people.",
+          "مصمم حول مشروعك وجدولك وفريقك.",
+        ],
+        text: [
+          "Structured meal programs with dependable service from mobilization through daily operations.",
+          "برامج وجبات منظمة وخدمة موثوقة من مرحلة التجهيز وحتى التشغيل اليومي.",
+        ],
+      },
+      {
+        eyebrow: ["WORKFORCE DINING", "إعاشة القوى العاملة"],
+        title: [
+          "Daily dining designed for large communities.",
+          "وجبات يومية مصممة للمجتمعات الكبيرة.",
+        ],
+        text: [
+          "Balanced menus, consistent quality and organized service for workforce accommodation.",
+          "قوائم متوازنة وجودة ثابتة وخدمة منظمة لسكن القوى العاملة.",
+        ],
+      },
+      {
+        eyebrow: ["REMOTE SITES", "المواقع النائية"],
+        title: [
+          "Reliable catering where access is difficult.",
+          "تموين موثوق حتى في المواقع صعبة الوصول.",
+        ],
+        text: [
+          "Mobile kitchens and coordinated logistics for challenging project locations.",
+          "مطابخ متنقلة ولوجستيات منسقة للمواقع والمشاريع ذات الظروف الصعبة.",
+        ],
+      },
+    ];
+
+    return slideImages.map((image, index) => ({
+      image,
+      ...copy[index % copy.length],
+    }));
+  }, [imagePool, serviceCards]);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = ar ? "rtl" : "ltr";
+    document.title = ar
+      ? "سيسكو للتموين | خدمات التموين والضيافة"
+      : "SISCO Catering | Catering & Hospitality";
+    try {
+      localStorage.setItem("l", lang);
+    } catch {}
+  }, [lang, ar]);
+
+  useEffect(() => {
+    if (heroSlides.length < 2) return;
+    const timer = setInterval(() => {
+      setSlide((current) => (current + 1) % heroSlides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
+
+  const changeSlide = (direction) => {
+    if (!heroSlides.length) return;
+    setSlide((current) =>
+      (current + direction + heroSlides.length) % heroSlides.length
+    );
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const next = {};
+
+    FIELDS.forEach(([id, , , type, required]) => {
+      const el = form.elements[id];
+      if (!el) return;
+      const value = el.value.trim();
+
+      if (required && !value) next[id] = T("req") || "Required";
+      if (
+        value &&
+        type === "email" &&
+        !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)
+      ) {
+        next[id] = T("inv") || "Invalid email";
+      }
+    });
+
+    setErrors(next);
+    if (Object.keys(next).length) return;
+
+    setSending(true);
+    setStatus("");
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      form.reset();
+      setStatus(T("ok") || "Thank you. We’ll contact you shortly.");
+    } catch {
+      setStatus(T("bad") || "Something went wrong. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const nav = [
+    [ar ? "الرئيسية" : "Home", "top"],
+    [ar ? "من نحن" : "About", "about"],
+    [ar ? "خدماتنا" : "Services", "services"],
+    [ar ? "القطاعات" : "Sectors", "sectors"],
+    [ar ? "المطبخ" : "Cuisine", "cuisine"],
+    [ar ? "تواصل معنا" : "Contact", "contact"],
+  ];
 
   return (
-    <>
-      <a className="skip" href="#main">{T('skip')}</a>
+    <div className="site-shell">
+      <header className="site-header">
+        <div className="container nav-row">
+          <a className="brand" href="#top" aria-label="SISCO Catering">
+            <Logo />
+          </a>
 
-      <div className="ann"><div className="w">
-        <span>{T('ann')}</span>
-        <span className="l">
-          <a href={`tel:${CFG.phone.replace(/[^+\d]/g, '').slice(0, 13)}`}><bdi>{CFG.phone}</bdi></a>
-          <a href={wa} target="_blank" rel="noopener noreferrer">WhatsApp</a>
-          <a href={`mailto:${CFG.email}`}><bdi>{CFG.email}</bdi></a>
-          <a href="#proposal">{T('prop')}</a>
-          <button className="lang" onClick={() => setLang(ar ? 'en' : 'ar')}>{T('lang')}</button>
-        </span>
-      </div></div>
+          <nav className={open ? "nav open" : "nav"}>
+            {nav.map(([label, id]) => (
+              <a key={id} href={`#${id}`} onClick={() => setOpen(false)}>
+                {label}
+              </a>
+            ))}
+            <button
+              className="lang-btn"
+              type="button"
+              onClick={() => setLang(ar ? "en" : "ar")}
+            >
+              {ar ? "EN" : "العربية"}
+            </button>
+          </nav>
 
-      <header className={scrolled ? 's' : ''}><div className="w hb">
-        <a className="logo" href="#top"><Logo /></a>
-        <button className="burger" aria-expanded={navOpen} aria-controls="nv" aria-label="Menu" onClick={() => setNavOpen(!navOpen)}>☰</button>
-        <nav id="nv" className={navOpen ? 'o' : ''} aria-label="Main">
-          <ul>
-            {NAV.map((n) => <li key={n[2]}><a href={`#${n[2]}`} onClick={() => setNavOpen(false)}>{L(n)}</a></li>)}
-            <li><a className="btn" href="#proposal" style={{ color: '#123a5c' }}>{T('prop')}</a></li>
-          </ul>
-        </nav>
-      </div></header>
+          <a className="top-cta" href="#contact">
+            {ar ? "اطلب عرضاً" : "Request a Quote"}
+          </a>
 
-      <main id="main">
-        <section className="hero" id="top"><div className="w in">
-          {/* TODO: for a real hero photo, set background in .hero (index.css) to url(/images/catering-hero.webp) */}
-          <p className="tag">{T('tr')}</p>
-          <h1>{T('h1')}</h1>
-          <p>{T('hp')}</p>
-          <p><a className="btn" href="#proposal">{T('b1')}</a> <a className="btn o" href="#services">{T('b2')}</a></p>
-          <div className="fl">{T('fc').map((x) => <span key={x}>✓ {x}</span>)}</div>
-        </div></section>
-
-        <div className="sl" role="region" aria-roledescription="carousel" aria-label={T('sv')} tabIndex={0}
-          onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
-          onFocus={() => setPaused(true)} onBlur={() => setPaused(false)} onKeyDown={onKey}
-          onTouchStart={(e) => { setPaused(true); setX0(e.touches[0].clientX) }} onTouchEnd={onTouchEnd}>
-          {SLIDES.map((s, k) => (
-            <div key={k} className={'sd' + (k === si ? ' a' : '')} role="group" aria-roledescription="slide"
-              aria-label={L(s)} aria-hidden={k !== si}
-              style={{ background: `url(${IMG[s[4]]}) ${s[5]}/cover no-repeat` }}>
-              <div className="c"><h3>{L(s)}</h3><p>{ar ? s[3] : s[2]}</p></div>
-            </div>
-          ))}
-          <button className="ar p" aria-label="Previous" onClick={() => go(-1)}>❮</button>
-          <button className="ar n" aria-label="Next" onClick={() => go(1)}>❯</button>
-          <div className="dots">
-            {SLIDES.map((_, k) => <button key={k} className={k === si ? 'a' : ''} aria-label={`${k + 1}`} onClick={() => setSi(k)} />)}
-          </div>
+          <button
+            className="menu-btn"
+            type="button"
+            aria-label="Toggle navigation"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span />
+            <span />
+          </button>
         </div>
+      </header>
 
-        <div className="w">
-          <div className="facts">
-            <div><b>28,000+</b><span>{ar ? 'وجبة يومياً*' : 'meals daily*'}</span></div>
-            <div><b>HACCP</b><span>*</span></div>
-            <div><b>ISO</b><span>9001 · 22000 · 14001 · 45001*</span></div>
-            <div><b>8,000+</b><span>{ar ? 'مقيم في مواقع متعددة*' : 'residents housed*'}</span></div>
-          </div>
-          <p className="note">{T('fn')} {T('cf')}</p>
-        </div>
-
-        <section id="about"><div className="w"><h2>{T('ab')}</h2><p className="lead">{T('abp')}</p></div></section>
-
-        <section className="alt" id="services"><div className="w"><h2>{T('sv')}</h2>
-          <div className="g">{SERV.map((s, k) => (
-            <article className="cd" key={k}>
-              <div className="im" style={{ background: `hsl(${30 + k * 38} 40% 88%)` }}><Plate h={30 + k * 38} /></div>
-              <div className="bd"><h3>{L(s)}</h3><p>{ar ? s[3] : s[2]}</p><a className="m" href="#proposal">{T('lm')}</a></div>
-            </article>))}
-          </div>
-        </div></section>
-
-        <section id="menus"><div className="w"><h2>{T('cu')}</h2><p className="lead">{T('cp')}</p>
-          <div className="g">{CUIS.map((c, k) => (
-            <article className="cd" key={k}>
-              <div className="im" style={{ background: `hsl(${100 + k * 45} 30% 85%)` }}><Plate h={100 + k * 45} /></div>
-              <div className="bd"><h3>{L(c)}</h3><p>{ar ? c[3] : c[2]}</p></div>
-            </article>))}
-          </div>
-        </div></section>
-
-        <section className="dk" id="halal"><div className="w"><h2>{T('hl')}</h2><p className="lead">{T('hp2')}</p>
-          <ul className="ck">{HALAL.map((h, k) => <li key={k}>{L(h)}</li>)}</ul>
-          <p className="note">{ar ? 'لا نذكر شهادة حلال ما لم تُقدَّم وثائق رسمية.' : 'Halal certification is only stated when official documentation is supplied.'}</p>
-        </div></section>
-
-        <section id="sectors"><div className="w"><h2>{T('sec')}</h2><p className="lead">{T('secp')}</p>
-          <h2 style={{ marginTop: 50 }}>{T('wy')}</h2>
-          <div className="g">{WHY.map((s, k) => <article className="cd pl" key={k}><h3>{L(s)}</h3><p>{ar ? s[3] : s[2]}</p></article>)}</div>
-        </div></section>
-
-        <section className="alt"><div className="w"><h2>{T('pc')}</h2>
-          <div className="pr">{STEPS.map((s, k) => <div key={k}>{L(s)}</div>)}</div>
-          <p className="note">{T('pcs')}</p>
-        </div></section>
-
-        <section className="dk"><div className="w"><h2>{T('ql')}</h2>
-          <ul className="ck">{QUAL.map((h, k) => <li key={k}>{L(h)}</li>)}</ul>
-          <p className="note">{T('qn')}</p>
-        </div></section>
-
-        <section id="projects"><div className="w"><h2>{T('pj')}</h2><p className="lead">{T('pn')}</p>
-          <div className="tabs" role="group">{PF.map((f) => <button key={f[2]} aria-pressed={pf === f[2]} onClick={() => setPf(f[2])}>{L(f)}</button>)}</div>
-          <div className="g">{projects.map((p, k) => <article className="cd pl" key={k}><h3>{L(p)}</h3></article>)}</div>
-        </div></section>
-
-        <section className="alt"><div className="w"><h2>{T('mn')}</h2><p className="lead">{T('mnn')}</p>
-          <div className="tabs" role="tablist">{Object.keys(MENU).map((k) => <button key={k} role="tab" aria-selected={mt === k} onClick={() => setMt(k)}>{ar ? MT[k] : k}</button>)}</div>
-          <div className="g">{MENU[mt].map((x, k) => <article className="cd pl" key={k}><h3>{x.split('|')[ar ? 1 : 0]}</h3></article>)}</div>
-          <p><a className="btn n" href="#proposal">{T('md')}</a></p>
-        </div></section>
-
-        <section id="media"><div className="w"><h2>{T('tt')}</h2>
-          {/* TODO: replace this sample testimonial with an approved real testimonial */}
-          <blockquote className="cd pl" style={{ margin: '20px 0' }}><p>{T('tq')}</p><small>{T('ts')}</small></blockquote>
-          <h2>{T('md2')}</h2><p className="lead">{T('mdp')}</p>
-        </div></section>
-
-        <section className="dk" id="proposal"><div className="w"><h2>{T('fm')}</h2>
-          <form onSubmit={submit} noValidate>
-            {FIELDS.map(([id, en, arb, type, req]) => (
-              <div key={id}>
-                <label htmlFor={id}>{ar ? arb : en}{req ? ' *' : ''}</label>
-                {type === 'select'
-                  ? <select id={id} required={!!req} aria-invalid={!!errs[id]}><option value="">{T('fs')}</option>{T('fo').map((o) => <option key={o}>{o}</option>)}</select>
-                  : <input id={id} type={type} required={!!req} aria-invalid={!!errs[id]} dir={type === 'tel' || type === 'email' ? 'ltr' : undefined} inputMode={type === 'tel' ? 'tel' : undefined} />}
-                <span className="er">{errs[id]}</span>
+      <main>
+        <section className="hero" id="top">
+          <div className="hero-stage">
+            {heroSlides.map((item, index) => (
+              <div
+                key={`${item.image}-${index}`}
+                className={index === slide ? "hero-slide is-active" : "hero-slide"}
+                aria-hidden={index !== slide}
+              >
+                <img src={item.image} alt="" />
               </div>
             ))}
-            <div className="f"><label htmlFor="message">{T('msg')}</label><textarea id="message" rows="4" /></div>
-            <div className="f"><label htmlFor="file">{T('up')}</label><input id="file" type="file" style={{ background: 'none', color: '#fff', border: 0, padding: 0 }} /></div>
-            <div className="f"><label style={{ fontWeight: 400 }}><input type="checkbox" id="consent" /> {T('cs')} *</label><span className="er">{errs.consent}</span></div>
-            <div className="f">
-              <button className="btn" type="submit" disabled={sending}>{sending ? T('sending') : T('sb')}</button>{' '}
-              <a className="btn o" href={wa} target="_blank" rel="noopener noreferrer">{T('wb')}</a>
-              <div id="msg" className={status.type} role="status" aria-live="polite">{status.text}</div>
+          </div>
+          <div className="hero-shade" />
+
+          <div className="container hero-inner">
+            <div className="hero-copy">
+              <p className="kicker">{L(heroSlides[slide]?.eyebrow)}</p>
+              <h1>{L(heroSlides[slide]?.title)}</h1>
+              <p className="hero-text">{L(heroSlides[slide]?.text)}</p>
+
+              <div className="hero-actions">
+                <a className="button primary" href="#contact">
+                  {ar ? "اطلب عرضاً" : "Request a Quote"}
+                </a>
+                <a className="button secondary" href="#services">
+                  {ar ? "استكشف خدماتنا" : "Explore Services"}
+                </a>
+              </div>
             </div>
-          </form>
-        </div></section>
 
-        <section id="contact"><div className="w"><h2>{T('ct')}</h2>
-          <p><bdi>{CFG.phone}</bdi><br /><bdi>{CFG.email}</bdi><br />{L(CFG.city)}<br />{T('wh')}: {L(CFG.hours)}<br />{T('ar')}</p>
-          {/* TODO: embed Google Map once the office address is confirmed */}
-        </div></section>
+            {heroSlides.length > 1 && (
+              <div className="hero-nav" aria-label="Hero slider navigation">
+                <div className="hero-counter">
+                  <strong>{String(slide + 1).padStart(2, "0")}</strong>
+                  <span>/</span>
+                  <span>{String(heroSlides.length).padStart(2, "0")}</span>
+                </div>
 
-        <section className="alt"><div className="w"><h2>{T('fq')}</h2>
-          {FAQ.map((q, k) => <details key={k}><summary>{L(q)}</summary><p>{ar ? q[3] : q[2]}</p></details>)}
-        </div></section>
+                <div className="hero-progress" aria-hidden="true">
+                  {heroSlides.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={index === slide ? "progress-item active" : "progress-item"}
+                      onClick={() => setSlide(index)}
+                      aria-label={`Show slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <div className="hero-arrows">
+                  <button
+                    type="button"
+                    onClick={() => changeSlide(-1)}
+                    aria-label="Previous slide"
+                  >
+                    {ar ? "→" : "←"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => changeSlide(1)}
+                    aria-label="Next slide"
+                  >
+                    {ar ? "←" : "→"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="proof-strip" aria-label="Company highlights">
+          <div className="container proof-grid">
+            <div><strong>28,000+</strong><span>{ar ? "وجبة يومياً" : "meals served daily"}</span></div>
+            <div><strong>HACCP</strong><span>{ar ? "معايير سلامة الغذاء" : "food safety standards"}</span></div>
+            <div><strong>ISO</strong><span>9001 · 22000 · 14001 · 45001</span></div>
+            <div><strong>8,000+</strong><span>{ar ? "مقيم في مواقع متعددة" : "residents supported"}</span></div>
+          </div>
+        </section>
+
+        <section className="clients-strip" aria-label="Clients and partners">
+          <div className="container clients-inner">
+            <div className="clients-heading">
+              <p className="kicker dark">{ar ? "عملاؤنا وشركاؤنا" : "CLIENTS & PARTNERS"}</p>
+              <p>{ar ? "جهات بارزة ظهرت في ملف الشركة." : "Selected organizations featured in the company profile."}</p>
+            </div>
+            <div className="clients-logos-wrap">
+              <img src={profileAsset("client-logos.png")} alt={ar ? "شعارات العملاء والشركاء" : "Selected client and partner logos"} loading="lazy" />
+            </div>
+          </div>
+        </section>
+
+        <section className="section about" id="about">
+          <div className="container split">
+            <div className="section-title">
+              <p className="kicker dark">{ar ? "من نحن" : "WHO WE ARE"}</p>
+              <h2>{T("ab") || (ar ? "تموين موثوق للمشاريع الكبيرة" : "Catering built for demanding operations")}</h2>
+            </div>
+            <div className="section-copy">
+              <p>
+                {T("abp") ||
+                  (ar
+                    ? "نقدم خدمات تموين وضيافة منظمة وموثوقة مع تركيز على الجودة والسلامة واستمرارية التشغيل."
+                    : "We provide dependable catering and hospitality with a clear focus on quality, food safety and consistent daily operations.")}
+              </p>
+              <a className="text-link" href="#services">
+                {ar ? "عرض الخدمات" : "View our services"} <span>→</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="section services" id="services">
+          <div className="container">
+            <div className="section-head-simple">
+              <div>
+                <p className="kicker dark">{ar ? "خدماتنا" : "OUR SERVICES"}</p>
+                <h2>{ar ? "خدمات واضحة. تنفيذ موثوق." : "Simple services. Reliable delivery."}</h2>
+              </div>
+              <p>
+                {ar
+                  ? "حلول تموين عملية للمشاريع ومجتمعات القوى العاملة والمواقع البعيدة."
+                  : "Practical catering solutions for projects, workforce communities and remote locations."}
+              </p>
+            </div>
+
+            <div className="service-grid visual-services">
+              {serviceCards.map((service) => (
+                <article className="service-card visual-service-card" key={service.number}>
+                  <div className="service-photo-wrap">
+                    {service.image && (
+                      <img src={service.image} alt={L(service.title)} loading="lazy" />
+                    )}
+                    <span className="service-number">{service.number}</span>
+                  </div>
+                  <div className="service-content">
+                    <h3>{L(service.title)}</h3>
+                    <p>{L(service.text)}</p>
+                    <a className="service-link" href="#contact">
+                      {ar ? "ناقش مشروعك" : "Discuss your project"} <span>↗</span>
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="section sectors" id="sectors">
+          <div className="container">
+            <div className="section-head-simple">
+              <div>
+                <p className="kicker dark">{ar ? "القطاعات والمشاريع" : "SECTORS & PROJECTS"}</p>
+                <h2>{ar ? "مصمم للعمليات الصناعية والمواقع البعيدة" : "Built for industrial operations and remote sites"}</h2>
+              </div>
+              <p>{ar ? "ندعم قطاعات النفط والغاز والطاقة والإنشاءات والبتروكيماويات والتعدين والجهات الحكومية عبر المملكة." : "We support oil & gas, energy, construction, petrochemical, mining and government operations across Saudi Arabia."}</p>
+            </div>
+
+            <div className="sector-grid">
+              {[
+                { image: "sector-catering.jpg", title: ["Industrial Catering", "التموين الصناعي"], text: ["High-volume catering for complex industrial and project environments.", "تموين عالي السعة لبيئات المشاريع والعمليات الصناعية المعقدة."] },
+                { image: "sector-housing.jpg", title: ["Workforce Communities", "مجتمعات القوى العاملة"], text: ["Integrated dining and accommodation support for large workforce communities.", "دعم متكامل للإعاشة والسكن لمجتمعات القوى العاملة الكبيرة."] },
+                { image: "sector-facility.jpg", title: ["Facility Support", "دعم المرافق"], text: ["Facility management and operational support delivered alongside catering services.", "إدارة مرافق ودعم تشغيلي متكامل إلى جانب خدمات التموين."] },
+              ].map((item) => (
+                <article className="sector-card" key={item.image}>
+                  <img src={profileAsset(item.image)} alt={L(item.title)} loading="lazy" />
+                  <div className="sector-card-overlay">
+                    <h3>{L(item.title)}</h3>
+                    <p>{L(item.text)}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="project-network">
+              <div className="project-network-image">
+                <img src={profileAsset("project-network.png")} alt={ar ? "شبكة مشاريع سيسكو" : "SISCO strategic project network"} loading="lazy" />
+              </div>
+              <div className="project-network-copy">
+                <p className="kicker dark">{ar ? "شبكة المشاريع" : "PROJECT NETWORK"}</p>
+                <h3>{ar ? "تغطية تشغيلية في مواقع رئيسية" : "Operational coverage across key project locations"}</h3>
+                <p>{ar ? "يشير ملف الشركة إلى عمليات في الجبيل والخبر/الدمام ورأس تنورة وطريف وشمال وجنوب الجفورة ومواقع أخرى." : "The company profile highlights operations in Jubail, Khobar/Dammam, Ras Tanura, Turaif, North and South Jafurah, and other locations."}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="statement-band">
+          <div className="container statement-inner">
+            <p className="kicker">{ar ? "لماذا سيسكو" : "WHY SISCO"}</p>
+            <h2>
+              {ar
+                ? "الجودة في الطعام مهمة. الاتساق في كل يوم أهم."
+                : "Good food matters. Consistency every day matters more."}
+            </h2>
+          </div>
+        </section>
+
+        <section className="section cuisine" id="cuisine">
+          <div className="container">
+            <div className="section-head-simple">
+              <div>
+                <p className="kicker dark">{ar ? "المطبخ" : "OUR CUISINE"}</p>
+                <h2>{ar ? "قوائم مرنة وتجربة طعام مناسبة لكل موقع" : "Flexible menus with a stronger food experience"}</h2>
+              </div>
+              <p>{ar ? "نقدم قوائم متنوعة مصممة وفق متطلبات العميل والاحتياجات الثقافية والغذائية، مع خيارات للبوفيه والفعاليات والمطابخ المتنقلة." : "Menus are tailored to client needs, cultural preferences and dietary requirements, with buffet, event and mobile-kitchen formats available."}</p>
+            </div>
+
+            <div className="cuisine-photo-grid">
+              {[
+                { image: "cuisine-buffet.jpg", title: ["Buffet & High-Volume Dining", "البوفيه والإعاشة عالية السعة"], text: ["Large-scale service supported by experienced culinary and hospitality teams.", "خدمة واسعة النطاق تدعمها فرق طهي وضيافة ذات خبرة."] },
+                { image: "cuisine-kitchen.jpg", title: ["Professional Kitchen Operations", "عمليات المطابخ الاحترافية"], text: ["Structured kitchen operations designed around hygiene, consistency and output.", "عمليات مطابخ منظمة تركز على النظافة والثبات وكفاءة الإنتاج."] },
+                { image: "cuisine-events.jpg", title: ["Events & Banqueting", "الفعاليات والولائم"], text: ["Custom menus, elegant setups, live stations and trained service crews.", "قوائم مخصصة وتجهيزات راقية ومحطات حية وفرق خدمة مدربة."] },
+              ].map((item) => (
+                <article className="cuisine-photo-card" key={item.image}>
+                  <img src={profileAsset(item.image)} alt={L(item.title)} loading="lazy" />
+                  <div>
+                    <h3>{L(item.title)}</h3>
+                    <p>{L(item.text)}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="cuisine-tags">
+              {CUIS.slice(0, 6).map((item) => (
+                <span key={L(item)}>{L(item)}</span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="section client-confidence">
+          <div className="container">
+            <div className="section-head-simple">
+              <div>
+                <p className="kicker dark">{ar ? "ثقة العملاء" : "CLIENT CONFIDENCE"}</p>
+                <h2>{ar ? "سجل تشغيلي يخدم مشاريع كبيرة ومعقدة" : "Operational proof instead of placeholder testimonials"}</h2>
+              </div>
+              <p>{ar ? "لم يتضمن ملف الشركة شهادات عملاء معتمدة للاقتباس، لذلك استخدمنا حقائق موثقة من الملف بدلاً من اختلاق اقتباسات." : "The company profile does not include approved client quotations, so this section uses documented proof points instead of invented testimonials."}</p>
+            </div>
+            <div className="confidence-grid">
+              <article><strong>01</strong><h3>{ar ? "شراكات موثوقة" : "Trusted partnerships"}</h3><p>{ar ? "يذكر الملف أن سيسكو شريك موثوق لأرامكو وسابك ومعادن والقدية ونيوم وغيرهم." : "The profile names Saudi Aramco, SABIC, Maaden, Qiddiya, NEOM and others among trusted partners."}</p></article>
+              <article><strong>02</strong><h3>{ar ? "مشاريع صناعية رئيسية" : "Critical industrial sites"}</h3><p>{ar ? "خبرة تشغيلية في الجبيل ورأس تنورة والجفورة وطريف والخبر/الدمام ومواقع أخرى." : "Operational experience across Jubail, Ras Tanura, Jafurah, Turaif, Khobar/Dammam and other sites."}</p></article>
+              <article><strong>03</strong><h3>{ar ? "حجم تشغيلي كبير" : "Large-scale capability"}</h3><p>{ar ? "أكثر من 28,000 وجبة يومياً ودعم سكني لأكثر من 8,000 مقيم وفق ملف الشركة." : "The profile reports 28,000+ meals served daily and housing support for 8,000+ residents."}</p></article>
+            </div>
+          </div>
+        </section>
+
+        <section className="strong-cta">
+          <img src={profileAsset("cta-catering.jpg")} alt="" aria-hidden="true" />
+          <div className="strong-cta-shade" />
+          <div className="container strong-cta-content">
+            <p className="kicker">{ar ? "ابدأ مشروعك معنا" : "START YOUR PROJECT WITH SISCO"}</p>
+            <h2>{ar ? "هل تخطط لخدمة تموين لمشروع أو موقع أو مجتمع قوى عاملة؟" : "Planning catering for a project, site or workforce community?"}</h2>
+            <p>{ar ? "شاركنا نطاق العمل وسنساعدك في تحديد نموذج الخدمة المناسب." : "Share your scope and requirements and our team can help shape the right service model."}</p>
+            <a className="button primary" href="#contact">{ar ? "اطلب عرضاً" : "Request a Proposal"}</a>
+          </div>
+        </section>
+
+        <section className="section contact" id="contact">
+          <div className="container contact-grid">
+            <div className="contact-copy">
+              <p className="kicker">{ar ? "تواصل معنا" : "LET'S TALK"}</p>
+              <h2>{ar ? "أخبرنا عن مشروعك." : "Tell us about your project."}</h2>
+              <p>
+                {ar
+                  ? "أرسل تفاصيلك وسيتواصل فريقنا معك لمناقشة الحل المناسب."
+                  : "Share a few details and our team will contact you to discuss the right catering solution."}
+              </p>
+              <div className="contact-details">
+                <a href={`tel:${CFG.phone.replace(/[^\d+]/g, "")}`}>{CFG.phone}</a>
+                <a href={`mailto:${CFG.email}`}>{CFG.email}</a>
+                <a href={wa} target="_blank" rel="noreferrer">WhatsApp</a>
+              </div>
+            </div>
+
+            <form className="contact-form" onSubmit={submit} noValidate>
+              {FIELDS.slice(0, 4).map(([id, english, arabic, type, required]) => (
+                <div className="field" key={id}>
+                  <label htmlFor={id}>{ar ? arabic : english}{required ? " *" : ""}</label>
+                  {type === "select" ? (
+                    <select id={id} name={id} required={!!required}>
+                      <option value="">{T("fs") || "Select"}</option>
+                      {(T("fo") || []).map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input id={id} name={id} type={type} required={!!required} />
+                  )}
+                  {errors[id] && <small>{errors[id]}</small>}
+                </div>
+              ))}
+
+              <div className="field full">
+                <label htmlFor="message">{ar ? "تفاصيل المشروع" : "Project details"}</label>
+                <textarea id="message" name="message" rows="5" />
+              </div>
+
+              <div className="form-bottom full">
+                <button className="button primary" type="submit" disabled={sending}>
+                  {sending ? (T("sending") || "Sending...") : (ar ? "إرسال الطلب" : "Send Enquiry")}
+                </button>
+                {status && <span className="form-status">{status}</span>}
+              </div>
+            </form>
+          </div>
+        </section>
       </main>
 
-      <footer><div className="w">
-        <div className="g">
-          <div><a className="logo" href="#top"><Logo /></a><p>{ar ? 'سيسكو للتموين، الخبر، المملكة العربية السعودية.' : 'SISCO Catering, Khobar, Saudi Arabia.'}</p></div>
-          <div><h3>{T('sv')}</h3>{SERV.slice(0, 4).map((s, k) => <a key={k} href="#services">{L(s)}</a>)}</div>
-          <div><h3>{T('ab')}</h3><a href="#about">{T('ab')}</a><a href="#projects">{L(NAV[5])}</a><a href="#contact">{L(NAV[7])}</a></div>
-          <div><h3>{T('ct')}</h3><a href={wa}><bdi>{CFG.phone}</bdi></a><a href={`mailto:${CFG.email}`}><bdi>{CFG.email}</bdi></a>{/* TODO: social links */}</div>
+      <footer className="footer">
+        <div className="container footer-main-new">
+          <div className="footer-brand-block">
+            <a href="#top" className="footer-brand"><Logo /></a>
+            <p>{ar ? "تموين صناعي وإعاشة وإدارة مرافق عبر المملكة العربية السعودية." : "Industrial catering, workforce housing and facility support across Saudi Arabia."}</p>
+          </div>
+          <div className="footer-links-group">
+            <strong>{ar ? "روابط" : "Explore"}</strong>
+            <a href="#about">{ar ? "من نحن" : "About"}</a>
+            <a href="#services">{ar ? "الخدمات" : "Services"}</a>
+            <a href="#sectors">{ar ? "القطاعات" : "Sectors"}</a>
+            <a href="#cuisine">{ar ? "المطبخ" : "Cuisine"}</a>
+          </div>
+          <div className="footer-links-group">
+            <strong>{ar ? "تواصل" : "Contact"}</strong>
+            <a href={`tel:${CFG.phone.replace(/[^\d+]/g, "")}`}>{CFG.phone}</a>
+            <a href={`mailto:${CFG.email}`}>{CFG.email}</a>
+            <span>{L(CFG.city)}</span>
+            <a href="https://www.siscosaudi.com" target="_blank" rel="noreferrer">www.siscosaudi.com</a>
+          </div>
         </div>
-        <p style={{ marginTop: 30 }}><a style={bare} href="#">{T('ft')}</a><a style={bare} href="#">{T('ft2')}</a><a style={{ display: 'inline' }} href="#">{T('ft3')}</a></p>
-        <p>{T('cr')}</p>
-      </div></footer>
-
-      <a className="wa" href={wa} target="_blank" rel="noopener noreferrer" aria-label={T('wb')}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm5.2 14c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.3c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z" /></svg>
-      </a>
-    </>
-  )
+        <div className="container footer-bottom-new">
+          <span>© {new Date().getFullYear()} SISCO Catering</span>
+          <span>{ar ? "الجودة · السلامة · الاستدامة" : "Quality · Safety · Sustainability"}</span>
+        </div>
+      </footer>
+    </div>
+  );
 }
