@@ -26,7 +26,7 @@ export default function App() {
   const T = (key) => S?.[lang]?.[key] ?? "";
   const L = (value) => value?.[ar ? 1 : 0] || "";
   const wa = `https://wa.me/${CFG.wa}`;
-  const profileAsset = (name) => `${import.meta.env.BASE_URL}public/profile/${name}`;
+  const profileAsset = (name) => `${import.meta.env.BASE_URL}public/images/${name}`;
 
   const imagePool = useMemo(
     () => unique(Object.values(IMG || {}).filter((value) => typeof value === "string")),
